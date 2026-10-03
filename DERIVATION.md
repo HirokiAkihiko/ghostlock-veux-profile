@@ -38,6 +38,9 @@ binary. Semua nilai adalah offset dalam byte dari awal struct (bukan tebakan).
 | seccomp | 2240 (0x8c0) | `__secure_computing`: `seccomp_mode(&current->seccomp)`, cek mode 1/2 |
 | pid | 1624 (0x658) | `copy_process`: `p->pid = pid_nr(pid)` (keyakinan tinggi) |
 | tgid | 1628 (0x65c) | `copy_process`: logika tgid/CLONE_THREAD (keyakinan tinggi) |
+| tasks | 1368 (0x558) | `mm_update_next_owner`: loop `for_each_process` — `ldr x8,[x26,#0x558]` + `sub x9,x8,#0x558` (container_of), cek `PF_KTHREAD` (bit 21) di hasil (variabel luar `g`, bukan inner `for_each_thread`) |
+| sched_task_group | 992 (0x3e0) | `sched_move_task` (inlined `sched_change_group`): `str x8,[x22,#0x3e0]` = `tsk->sched_task_group = tg`; x22=tsk terkonfirmasi via pola `sched_class@0x90` |
+| atomic_flags | 1568 (0x620) | struktural: `pid(1624) − sizeof(restart_block)(48) − 8`; urutan vanilla `atomic_flags → restart_block → pid → tgid` |
 | sched_task_group, tasks, atomic_flags | null | tidak wajib di schema; belum diverifikasi |
 
 ## struct cred (layout vendor, C2)
@@ -66,6 +69,16 @@ Konsisten dengan `struct rb_node` 24 byte ×2 di 5.4 dan
 27/27 cek schema `docs/kernel_profiles/PROFILE_SCHEMA.md` (required-field
 matrix + semua bounds) LULUS. `kernel_phys_load` null = fallback ke formula SoC
 (diizinkan schema).
+
+**Update 2026-10-04**: aplikasi menggabungkan DUA validator
+(`validateProfileFields` + `ProfileResolver.validateMerged`). Yang kedua
+mewajibkan **15 field `task_struct` berupa Number** (tidak boleh null/hilang).
+Tiga field yang kurang (`tasks`, `sched_task_group`, `atomic_flags`) diderivasi
+dari disassembly (lihat tabel di atas). `refN_image` ditulis sebagai **signed
+i64** (negatif) sesuai konvensi extractor (`(*image as i64)`), bukan unsigned.
+`kernel_phys_offset` diisi eksplisit `0x80000000` (standar Qualcomm SM6375;
+native fallback ke nilai ini bila absen). Replika Python kedua validator:
+**invalidPaths KOSONG**.
 
 ## Batasan
 - pid/tgid keyakinan tinggi tapi belum diverifikasi fungsi kedua.
