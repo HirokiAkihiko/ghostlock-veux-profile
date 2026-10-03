@@ -6,9 +6,9 @@
   "release": "5.4.274-qgki-g82179e362f33",
   "struct_fields": {
     "cred_caps": null,
-    "cred_securebits": null,
+    "cred_securebits": 36,
     "cred_security": null,
-    "cred_uid": null,
+    "cred_uid": 4,
     "seccomp_filter": null,
     "seccomp_filter_count": null,
     "seccomp_mode": null,
@@ -18,26 +18,35 @@
     "struct_page_type": null,
     "struct_slab_cache": null,
     "task_atomic_flags": null,
-    "task_comm": null,
-    "task_cred": null,
-    "task_normal_prio": null,
-    "task_pi_blocked_on": null,
-    "task_pi_lock": null,
-    "task_pi_top_task": null,
-    "task_pi_waiters": null,
-    "task_pid": null,
-    "task_prio": null,
-    "task_real_cred": null,
+    "task_comm": 2080,
+    "task_cred": 2064,
+    "task_normal_prio": 132,
+    "task_pi_blocked_on": 2312,
+    "task_pi_lock": 2276,
+    "task_pi_top_task": 2304,
+    "task_pi_waiters": 2288,
+    "task_pid": 1624,
+    "task_prio": 124,
+    "task_real_cred": 2056,
     "task_sched_task_group": null,
-    "task_seccomp": null,
+    "task_seccomp": 2240,
     "task_tasks": null,
-    "task_tgid": null,
-    "waiter_lock": null,
+    "task_tgid": 1628,
+    "waiter_lock": 56,
     "waiter_pi_tree": null,
-    "waiter_task": null,
+    "waiter_task": 48,
     "waiter_tree": null,
     "waiter_wake_state": null,
-    "waiter_ww_ctx": null
+    "waiter_ww_ctx": null,
+    "cred_usage": 0,
+    "cred_cap_inheritable": 40,
+    "cred_cap_permitted": 48,
+    "cred_cap_effective": 56,
+    "cred_cap_bset": 64,
+    "cred_cap_ambient": 72,
+    "cred_user": 128,
+    "cred_user_ns": 136,
+    "cred_group_info": 144
   },
   "symbols": {
     "off_init_cred": 43808832,
@@ -49,5 +58,25 @@
     "off_slide_boot_id": 47955497,
     "off_slide_loggers_0_1": 43264144,
     "off_slide_nfulnl_logger": 43231776
-  }
+  },
+  "cred_copy_size": 168,
+  "cred_caps": {
+    "offset": 48,
+    "count": 3,
+    "value": 274877906943
+  },
+  "cred_refs": [
+    {
+      "offset": 128,
+      "image": 18446743799009667632
+    },
+    {
+      "offset": 136,
+      "image": 18446743799009667064
+    },
+    {
+      "offset": 144,
+      "image": 18446743799009671224
+    }
+  ]
 }

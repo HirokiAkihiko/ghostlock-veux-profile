@@ -36,3 +36,13 @@ jadi derivasi struct tidak dimungkinkan; offset simbol inti tercakup semua.
 Profil dibuat dan lolos verifikasi format, **belum diuji di perangkat**.
 Pengujian temp-root di HP sesungguhnya tetap berisiko (bootloop) —
 lakukan dengan kesadaran penuh.
+
+## Update: profil lengkap (2026-10-03 malam)
+
+Field `task_struct`/`cred`/`rt_mutex_waiter` yang tadinya null sudah diderivasi
+manual dari disassembly kernel dan terverifikasi silang (lihat `DERIVATION.md`).
+**27/27 cek schema `PROFILE_SCHEMA.md` lolos.** File baru: `DERIVATION.md`
+(catatan derivasi), `kernel.config.txt` (config kernel persis dari IKCONFIG).
+
+⚠️ Belum diuji di perangkat nyata. Pastikan `uname -r` persis
+`5.4.274-qgki-g82179e362f33` sebelum dipakai.
