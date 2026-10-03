@@ -97,3 +97,18 @@ inline constexpr unsigned long MM_STRUCT_SZ = 0x500;  // = 1280
 1280 adalah default bawaan aplikasi untuk kernel yang tidak diketahui ukurannya. Karena 1024 gagal konsisten, dikembalikan ke default 1280.
 
 **Catatan**: `/proc/slabinfo` dan `/sys/kernel/slab/mm_struct/object_size` tidak bisa dibaca tanpa root di Android, jadi ukuran pasti belum terverifikasi. Jika 1280 juga gagal, perlu investigasi lebih lanjut.
+
+## Update 2026-10-04: mm_struct_sz 1280 -> 896
+
+**Analisis dari source kernel 5.4.274** (`kernel/fork.c:mm_cache_init`):
+```c
+mm_size = sizeof(struct mm_struct) + cpumask_size();
+mm_cachep = kmem_cache_create_usercopy("mm_struct", mm_size, ...,
+        SLAB_HWCACHE_ALIGN|...);
+```
+
+- `sizeof(struct mm_struct)` ≈ 880 (dihitung dari `include/linux/mm_types.h` + config)
+- `cpumask_size()` = 8 (8 CPU → 1 unsigned long)
+- Total = 888, dibulatkan ke 64-byte (SLAB_HWCACHE_ALIGN) → **896**
+
+1280 (default bawaan) kemungkinan untuk kernel lebih baru dengan mm_struct lebih besar.
