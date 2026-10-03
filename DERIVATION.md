@@ -85,3 +85,15 @@ native fallback ke nilai ini bila absen). Replika Python kedua validator:
 - sched_task_group/tasks/atomic_flags masih null (opsional).
 - ref_images dihitung, tidak dibaca (pointer di-zero-kan vendor).
 - Belum diuji di perangkat nyata. Wajib cocokkan `uname -r` persis sebelum pakai.
+
+## Update 2026-10-04: mm_struct_sz 1024 -> 1280
+
+**Masalah**: Exploit gagal di W1 heap spray, `KernelSnitch mm_struct leak failed` 4/4.
+
+**Root cause**: `kernelsnitch.mm_struct_sz = 1024` disalin dari profil 5.15 (miracle), tapi untuk kernel 5.4 ini kemungkinan salah. Dari kode sumber GhostLock (`src/core/kernel/constants.hpp`):
+```cpp
+inline constexpr unsigned long MM_STRUCT_SZ = 0x500;  // = 1280
+```
+1280 adalah default bawaan aplikasi untuk kernel yang tidak diketahui ukurannya. Karena 1024 gagal konsisten, dikembalikan ke default 1280.
+
+**Catatan**: `/proc/slabinfo` dan `/sys/kernel/slab/mm_struct/object_size` tidak bisa dibaca tanpa root di Android, jadi ukuran pasti belum terverifikasi. Jika 1280 juga gagal, perlu investigasi lebih lanjut.
