@@ -112,3 +112,32 @@ mm_cachep = kmem_cache_create_usercopy("mm_struct", mm_size, ...,
 - Total = 888, dibulatkan ke 64-byte (SLAB_HWCACHE_ALIGN) → **896**
 
 1280 (default bawaan) kemungkinan untuk kernel lebih baru dengan mm_struct lebih besar.
+
+## Troubleshooting: KernelSnitch mm_struct leak failed (2026-10-04)
+
+**Gejala**: Profil diterima aplikasi (`invalid=0`), exploit jalan tapi gagal di W1 heap spray:
+```
+[*] [spray] mm_struct leaked=0xffffffffffffffff
+[-] KernelSnitch mm_struct leak failed (4/4 retries)
+[-] heap spray failed
+```
+
+**Nilai `mm_struct_sz` yang dicoba** (tiap ronde: download ulang .conf → re-import → run di HP):
+| Nilai | Asal | Hasil |
+|-------|------|-------|
+| 1024 | Disalin dari profil 5.15 (miracle) | Gagal |
+| 1280 | Default bawaan aplikasi (`src/core/kernel/constants.hpp`) | Gagal |
+| 896 | Analisis source 5.4.274: `mm_cache_init()` = `sizeof(mm_struct)+cpumask_size()`, SLAB_HWCACHE_ALIGN → ~880+8=888 → 896 | Gagal |
+| 960 | Langkah 64-byte berikutnya | Gagal |
+| 832 | Langkah 64-byte sebelumnya | Gagal |
+
+**Temuan kunci dari config kernel** (diekstrak via IKCONFIG dari Image + `/proc/config.gz` via Shizuku, 6664 baris, identik):
+```
+CONFIG_SLAB_FREELIST_RANDOM=y
+CONFIG_SLAB_FREELIST_HARDENED=y
+CONFIG_SHUFFLE_PAGE_ALLOCATOR=y
+```
+
+**Kesimpulan**: Kegagalan konsisten di semua nilai `mm_struct_sz` menunjukkan masalah BUKAN pada ukuran, melainkan hardening kernel (`SLAB_FREELIST_RANDOM`, `SHUFFLE_PAGE_ALLOCATOR`) yang membuat teknik heap spray stride-based KernelSnitch tidak kompatibel dengan kernel 5.4 ini.
+
+**Tindak lanjut**: Issue dipost ke `YuKongA/ghostlock-app#270` untuk konfirmasi developer.
