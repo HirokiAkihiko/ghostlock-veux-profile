@@ -141,3 +141,46 @@ CONFIG_SHUFFLE_PAGE_ALLOCATOR=y
 **Kesimpulan**: Kegagalan konsisten di semua nilai `mm_struct_sz` menunjukkan masalah BUKAN pada ukuran, melainkan hardening kernel (`SLAB_FREELIST_RANDOM`, `SHUFFLE_PAGE_ALLOCATOR`) yang membuat teknik heap spray stride-based KernelSnitch tidak kompatibel dengan kernel 5.4 ini.
 
 **Tindak lanjut**: Issue dipost ke `YuKongA/ghostlock-app#270` untuk konfirmasi developer.
+
+## mm_struct_sz = 920 (derivasi 2026-10-05, metode TheFliss)
+
+Di-derive dari disassembly `Image`: string "mm_struct" @ fileoff 0x1e712fb, di-xref dari 2 situs
+(0x2504ee8, 0x250c488) dengan pola identik:
+
+```
+adrp x0, #0x1e71000
+add  x0, x0, #0x2fb      ; x0 = "mm_struct"
+mov  w1, #0x398          ; a2 = size = 0x398 = 920
+mov  w3, #0x2000
+movk w3, #0x404, lsl #16 ; a4 = 0x04042000 = 67379200
+mov  w4, #0x158          ; a5
+mov  w5, #0x170          ; a6
+mov  w2, wzr             ; a3 = 0
+mov  x6, xzr             ; a7 = 0
+bl   kmem_cache_create_usercopy
+```
+
+Cocok dengan `mm_cachep = kmem_cache_create_usercopy("mm_struct", 0x398, 0, 67379200, 0x158, 0x170, 0)`
+di `proc_caches_init`. Nilai lama 832 (tebakan) diganti 920. Catatan: ukuran benar TIDAK
+memperbaiki W1 heap-spray failure (hardening kernel) — terbukti di moonstone (TheFliss, issue #272).
+
+## kernel_phys_offset = 0x40000000, kernel_phys_load = 0x40080000 (derivasi 2026-10-05)
+
+Semantik dari source GhostLock (`src/core/memory/address_space.cpp`):
+- `kernel_phys_offset` = DRAM base utk translasi image -> direct-map
+  (default bawaan P0 = 0x80000000 bila null/tidak di-override).
+- `kernel_phys_load` = alamat fisik kernel di-load
+  (default P0_KERNEL_PHYS_LOAD = 0xa8000000 bila 0).
+
+Derivasi:
+- DRAM base = **0x40000000** dari device tree (`memory@40000000`, reg 8GB).
+  Nilai lama 0x80000000 hanya default GhostLock — SALAH utk veux.
+- `text_offset` dari header Image ARM64 (magic "ARMd" OK) = **0x80000**.
+  kernel_phys_load = DRAM base + text_offset = **0x40080000**.
+  Nilai lama 0 (-> default 0xa8000000) juga salah.
+
+Sanity translasi: image_addr = KIMAGE_TEXT_BASE+off -> physical = 0x40080000+off
+(>= phys_offset OK) -> direct = (0x80000+off) | PAGE_OFFSET. Masuk akal.
+
+Caveat: DRAM base 0x40000000 berasal dari DT kiriman user (belum diverifikasi
+independen dari vendor_boot DTB di payload.bin). text_offset dari Image sendiri (solid).
